@@ -30,7 +30,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-bg-light dark:bg-bg-dark p-4">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-bg-light dark:bg-bg-dark p-4 text-text-light dark:text-text-dark">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-primary dark:text-sky-400">

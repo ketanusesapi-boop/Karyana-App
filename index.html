@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shop Inventory & Sales Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              primary: '#10b981', // emerald-500
+              'primary-hover': '#059669', // emerald-600
+              secondary: '#14b8a6', // teal-500
+              'secondary-hover': '#0d9488', // teal-600
+              danger: '#dc2626', // red-600
+              'danger-hover': '#b91c1c', // red-700
+              
+              'bg-light': '#f8fafc', // slate-50 (was slate-100)
+              'bg-dark': '#0f172a', // slate-900
+              
+              'card-light': '#ffffff', // white
+              'card-dark': '#1e293b', // slate-800
+              
+              'text-light': '#0f172a', // slate-900
+              'text-dark': '#f1f5f9', // slate-100
+              
+              'subtle-light': '#64748b', // slate-500
+              'subtle-dark': '#94a3b8', // slate-400
+              
+              'border-light': '#cbd5e1', // slate-300
+              'border-dark': '#334155', // slate-700
+            },
+          }
+        }
+      }
+    </script>
+    <style>
+      /* Responsive Table Styles */
+      @media (max-width: 767px) {
+        .responsive-table thead {
+          display: none;
+        }
+        .responsive-table tr {
+          display: block;
+          margin-bottom: 1rem;
+          border-radius: 0.5rem;
+          overflow: hidden;
+          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+        }
+        .responsive-table td {
+          display: block;
+          text-align: right;
+          position: relative;
+          padding-left: 50%;
+          border-bottom: 1px solid;
+        }
+        .responsive-table .placeholder-cell {
+          padding-left: 1rem;
+          padding-right: 1rem;
+          text-align: center;
+        }
+        .responsive-table.dark td {
+            border-color: #334155; /* slate-700 */
+        }
+        .responsive-table td:last-child {
+          border-bottom: 0;
+        }
+        .responsive-table td:before {
+          content: attr(data-label);
+          position: absolute;
+          left: 0.75rem;
+          width: 45%;
+          padding-right: 0.75rem;
+          text-align: left;
+          font-weight: 600;
+        }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "recharts": "https://aistudiocdn.com/recharts@^3.3.0",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.4.0/",
+    "@firebase/auth": "https://aistudiocdn.com/@firebase/auth@^1.11.0",
+    "@firebase/app": "https://aistudiocdn.com/@firebase/app@^0.14.4",
+    "@firebase/firestore": "https://aistudiocdn.com/@firebase/firestore@^4.9.2"
+  }
+}
+</script>
+</head>
+  <body class="bg-bg-light dark:bg-bg-dark">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

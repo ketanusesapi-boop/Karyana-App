@@ -1,0 +1,5 @@
+{
+  "name": "Copy of Copy of Shop Inventory & Sales Tracker using Firebase for storage subscription bases",
+  "description": "A comprehensive app for shop owners to track inventory and register sales, using Google Sheets as a simulated backend. It features inventory management, sales registration, and a dashboard with key metrics and visualizations.",
+  "requestFramePermissions": []
+}

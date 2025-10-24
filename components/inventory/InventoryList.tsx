@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { Product } from '../../types';
 import Modal from '../ui/Modal';
+import InventoryImportModal from './InventoryImportModal';
 
 interface InventoryListProps {
   onEditProduct: (product: Product) => void;
@@ -12,6 +13,7 @@ const InventoryList: React.FC<InventoryListProps> = ({ onEditProduct, onAddNewPr
   const { inventory, deleteProduct, loading } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isImportModalOpen, setImportModalOpen] = useState(false);
 
   const filteredInventory = useMemo(() => {
     if (!searchTerm) {
@@ -46,6 +48,9 @@ const InventoryList: React.FC<InventoryListProps> = ({ onEditProduct, onAddNewPr
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full sm:w-64 px-3 py-2 border border-border-light dark:border-border-dark rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-transparent"
           />
+           <button onClick={() => setImportModalOpen(true)} className="px-4 py-2 text-sm font-medium border border-secondary text-secondary rounded-md hover:bg-secondary/10 whitespace-nowrap">
+            Import CSV
+          </button>
         </div>
       </div>
       
@@ -104,6 +109,10 @@ const InventoryList: React.FC<InventoryListProps> = ({ onEditProduct, onAddNewPr
             </div>
           </div>
         </Modal>
+      )}
+
+      {isImportModalOpen && (
+        <InventoryImportModal onClose={() => setImportModalOpen(false)} />
       )}
     </div>
   );

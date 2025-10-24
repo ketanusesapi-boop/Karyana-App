@@ -45,3 +45,8 @@ export interface UserSubscription {
   subscriptionStatus: 'active' | 'expired';
   subscriptionEndDate: any; // Firestore Timestamp
 }
+
+export interface DateRange {
+  startDate: Date | null;
+  endDate: Date | null;
+}

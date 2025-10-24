@@ -13,6 +13,7 @@ interface DataContextState {
   deleteProduct: (productId: string) => Promise<void>;
   addSale: (sale: Omit<Sale, 'id' | 'date'>) => Promise<void>;
   clearSales: () => Promise<void>;
+  refetchData: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextState | undefined>(undefined);
@@ -29,26 +30,26 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children, user }) =>
 
   const userId = user.uid;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [fetchedInventory, fetchedSales] = await Promise.all([
-          firebaseService.getInventory(userId),
-          firebaseService.getSales(userId),
-        ]);
-        setInventory(fetchedInventory);
-        setSales(fetchedSales);
-      } catch (error) {
-        console.error("Failed to fetch data from Firebase", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (userId) {
-        fetchData();
+  const fetchData = useCallback(async () => {
+    if (!userId) return;
+    try {
+      setLoading(true);
+      const [fetchedInventory, fetchedSales] = await Promise.all([
+        firebaseService.getInventory(userId),
+        firebaseService.getSales(userId),
+      ]);
+      setInventory(fetchedInventory);
+      setSales(fetchedSales);
+    } catch (error) {
+      console.error("Failed to fetch data from Firebase", error);
+    } finally {
+      setLoading(false);
     }
   }, [userId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const addProduct = useCallback(async (productData: Omit<Product, 'id'>) => {
     const newProduct = await firebaseService.addProduct(userId, productData);
@@ -99,7 +100,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children, user }) =>
     updateProduct,
     deleteProduct,
     addSale,
-    clearSales
+    clearSales,
+    refetchData: fetchData,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

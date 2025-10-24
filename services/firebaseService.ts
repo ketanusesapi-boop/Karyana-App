@@ -153,6 +153,18 @@ export const addProduct = async (userId: string, productData: Omit<Product, 'id'
   return { ...productData, id: docRef.id };
 };
 
+export const batchAddProducts = async (userId: string, productsData: Omit<Product, 'id'>[]): Promise<void> => {
+  const inventoryRef = collection(db, 'users', userId, 'inventory');
+  const batch = writeBatch(db);
+  
+  productsData.forEach(productData => {
+    const docRef = doc(inventoryRef); // Automatically generate a new ID
+    batch.set(docRef, productData);
+  });
+
+  await batch.commit();
+};
+
 export const updateProduct = async (userId: string, product: Product): Promise<void> => {
   const { id, ...productData } = product;
   const productRef = doc(db, 'users', userId, 'inventory', id);

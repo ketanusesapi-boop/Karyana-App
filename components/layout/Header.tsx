@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { auth, signOut } from '../../services/firebaseService';
+import LogoutConfirmationModal from '../auth/LogoutConfirmationModal';
 
 const PlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 sm:w-5 sm:h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>;
 const CurrencyRupeeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 sm:w-5 sm:h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 8.25H9m6 3H9m3 6l-3-3h1.5a3 3 0 100-6M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
@@ -20,14 +21,15 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onAddNewProduct, onNewSale, currentView, setCurrentView }) => {
+  const [isLogoutModalOpen, setLogoutModalOpen] = useState(false);
 
-  const handleLogout = async () => {
+  const handleConfirmLogout = async () => {
     try {
-      // FIX: Switched to Firebase v9+ modular syntax for signOut.
       await signOut(auth);
     } catch (error) {
       console.error("Error signing out: ", error);
     }
+    setLogoutModalOpen(false);
   };
 
   const NavLink: React.FC<{ view: View; label: string; icon: React.ReactNode }> = ({ view, label, icon }) => (
@@ -45,67 +47,75 @@ const Header: React.FC<HeaderProps> = ({ onAddNewProduct, onNewSale, currentView
   );
 
   return (
-    <header className="bg-card-light dark:bg-card-dark shadow-md sticky top-0 z-40">
-      <div className="mx-auto px-4 sm:px-6">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <div className="flex-shrink-0">
-                <h1 className="text-xl sm:text-2xl font-bold text-primary dark:text-sky-400 whitespace-nowrap">ShopTrack</h1>
+    <>
+      <header className="bg-card-light dark:bg-card-dark shadow-md sticky top-0 z-40">
+        <div className="mx-auto px-4 sm:px-6">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="flex-shrink-0">
+                  <h1 className="text-xl sm:text-2xl font-bold text-primary dark:text-sky-400 whitespace-nowrap">ShopTrack</h1>
+              </div>
+              <nav className="flex space-x-1 sm:space-x-2">
+                <NavLink view="dashboard" label="Dashboard" icon={<Squares2X2Icon />} />
+                <NavLink view="inventory" label="Inventory" icon={<CubeIcon />} />
+                <NavLink view="sales" label="Sales" icon={<ShoppingCartIcon />} />
+                <NavLink view="lowstock" label="Low Stock" icon={<ExclamationTriangleIcon />} />
+              </nav>
             </div>
-            <nav className="flex space-x-1 sm:space-x-2">
-              <NavLink view="dashboard" label="Dashboard" icon={<Squares2X2Icon />} />
-              <NavLink view="inventory" label="Inventory" icon={<CubeIcon />} />
-              <NavLink view="sales" label="Sales" icon={<ShoppingCartIcon />} />
-              <NavLink view="lowstock" label="Low Stock" icon={<ExclamationTriangleIcon />} />
-            </nav>
-          </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <button
-                onClick={onNewSale}
-                className="hidden sm:flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-secondary rounded-md hover:bg-secondary-hover"
-            >
-                <CurrencyRupeeIcon />
-                <span>New Sale</span>
-            </button>
-             <button
-                onClick={onAddNewProduct}
-                className="hidden sm:flex items-center space-x-2 px-3 py-2 text-sm font-medium border border-primary text-primary rounded-md hover:bg-primary/10"
-            >
-                <PlusIcon />
-                <span>Add Product</span>
-            </button>
-            <button 
-              onClick={handleLogout} 
-              className="text-subtle-light dark:text-subtle-dark hover:text-text-light dark:hover:text-text-dark"
-              aria-label="Logout"
-            >
-              <span className="hidden sm:inline text-sm font-medium">Logout</span>
-              <span className="sm:hidden">
-                <ArrowRightOnRectangleIcon />
-              </span>
-            </button>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <button
+                  onClick={onNewSale}
+                  className="hidden sm:flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-secondary rounded-md hover:bg-secondary-hover"
+              >
+                  <CurrencyRupeeIcon />
+                  <span>New Sale</span>
+              </button>
+               <button
+                  onClick={onAddNewProduct}
+                  className="hidden sm:flex items-center space-x-2 px-3 py-2 text-sm font-medium border border-primary text-primary rounded-md hover:bg-primary/10"
+              >
+                  <PlusIcon />
+                  <span>Add Product</span>
+              </button>
+              <button 
+                onClick={() => setLogoutModalOpen(true)} 
+                className="text-subtle-light dark:text-subtle-dark hover:text-text-light dark:hover:text-text-dark"
+                aria-label="Logout"
+              >
+                <span className="hidden sm:inline text-sm font-medium">Logout</span>
+                <span className="sm:hidden">
+                  <ArrowRightOnRectangleIcon />
+                </span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-      {/* Mobile Actions Footer */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-card-light dark:bg-card-dark border-t border-border-light dark:border-border-dark flex justify-around py-2">
-         <button
-            onClick={onNewSale}
-            className="flex flex-col items-center text-secondary text-xs font-medium space-y-1"
-        >
-            <CurrencyRupeeIcon />
-            <span>New Sale</span>
-        </button>
-         <button
-            onClick={onAddNewProduct}
-            className="flex flex-col items-center text-primary text-xs font-medium space-y-1"
-        >
-            <PlusIcon />
-            <span>Add Product</span>
-        </button>
-      </div>
-    </header>
+        {/* Mobile Actions Footer */}
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-card-light dark:bg-card-dark border-t border-border-light dark:border-border-dark flex justify-around py-2">
+           <button
+              onClick={onNewSale}
+              className="flex flex-col items-center text-secondary text-xs font-medium space-y-1"
+          >
+              <CurrencyRupeeIcon />
+              <span>New Sale</span>
+          </button>
+           <button
+              onClick={onAddNewProduct}
+              className="flex flex-col items-center text-primary text-xs font-medium space-y-1"
+          >
+              <PlusIcon />
+              <span>Add Product</span>
+          </button>
+        </div>
+      </header>
+      
+      <LogoutConfirmationModal 
+        isOpen={isLogoutModalOpen}
+        onClose={() => setLogoutModalOpen(false)}
+        onConfirm={handleConfirmLogout}
+      />
+    </>
   );
 };
 

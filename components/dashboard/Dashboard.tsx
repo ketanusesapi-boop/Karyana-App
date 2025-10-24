@@ -76,7 +76,9 @@ const Dashboard: React.FC = () => {
   
   return (
     <div className="space-y-6">
-       <DateRangeFilter onDateRangeChange={setDateRange} />
+       <div className="bg-card-light dark:bg-card-dark p-4 rounded-lg shadow-md">
+        <DateRangeFilter onDateRangeChange={setDateRange} />
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Total Revenue" value={`₹${stats.totalSales.toFixed(2)}`} />

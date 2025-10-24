@@ -8,6 +8,7 @@ import {
   signOut,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   type User
 } from 'firebase/auth';
 import {
@@ -48,7 +49,7 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 
 // Export auth helpers for components
-export { onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword };
+export { onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail };
 export type { User };
 
 // Subscription functions

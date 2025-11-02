@@ -1,19 +1,38 @@
-import React, { useMemo } from 'react';
-import { useData } from '../../context/DataContext';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Product } from '../../types';
+import { getInventory, auth } from '../../services/firebaseService';
 
 interface LowStockPageProps {
   onEditProduct: (product: Product) => void;
 }
 
 const LowStockPage: React.FC<LowStockPageProps> = ({ onEditProduct }) => {
-  const { inventory, loading } = useData();
+  const [fullInventory, setFullInventory] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAllInventory = async () => {
+      if (auth.currentUser) {
+        setLoading(true);
+        try {
+          const items = await getInventory(auth.currentUser.uid);
+          setFullInventory(items);
+        } catch (error) {
+          console.error("Failed to fetch full inventory for low stock page:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchAllInventory();
+  }, []);
+
 
   const lowStockItems = useMemo(() => {
-    return inventory
-      .filter(p => p.stock <= p.lowStockThreshold)
+    return fullInventory
+      .filter(p => p.type === 'item' && p.stock <= p.lowStockThreshold)
       .sort((a, b) => a.stock - b.stock);
-  }, [inventory]);
+  }, [fullInventory]);
 
   if (loading) {
     return <div className="text-center p-10">Loading low stock items...</div>;

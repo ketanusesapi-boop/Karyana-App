@@ -1,13 +1,17 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
-import { Product, Sale } from '../types';
+import { Product, Sale, AnalyticsSummary } from '../types';
 import * as firebaseService from '../services/firebaseService';
-// FIX: Import User type from our own service to avoid direct dependency on firebase libraries in components.
 import type { User } from '../services/firebaseService';
+import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 
 interface DataContextState {
   inventory: Product[];
-  sales: Sale[];
+  analyticsSummary: AnalyticsSummary | null;
   loading: boolean;
+  inventoryLoading: boolean;
+  loadingMoreInventory: boolean;
+  hasMoreInventory: boolean;
+  fetchMoreInventory: () => void;
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
   updateProduct: (product: Product) => Promise<void>;
   deleteProduct: (productId: string) => Promise<void>;
@@ -23,85 +27,107 @@ interface DataProviderProps {
     user: User;
 }
 
+const PAGE_SIZE = 10;
+
 export const DataProvider: React.FC<DataProviderProps> = ({ children, user }) => {
   const [inventory, setInventory] = useState<Product[]>([]);
-  const [sales, setSales] = useState<Sale[]>([]);
+  const [lastProductVisible, setLastProductVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMoreInventory, setHasMoreInventory] = useState(true);
+  const [inventoryLoading, setInventoryLoading] = useState(true);
+  const [loadingMoreInventory, setLoadingMoreInventory] = useState(false);
+  
+  const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   const userId = user.uid;
 
-  const fetchData = useCallback(async () => {
+  const refetchData = useCallback(async () => {
     if (!userId) return;
+    setLoading(true);
+    setInventoryLoading(true);
     try {
-      setLoading(true);
-      const [fetchedInventory, fetchedSales] = await Promise.all([
-        firebaseService.getInventory(userId),
-        firebaseService.getSales(userId),
-      ]);
-      setInventory(fetchedInventory);
-      setSales(fetchedSales);
+        const [summary, { products, lastDoc }] = await Promise.all([
+            firebaseService.getAnalyticsSummary(userId),
+            firebaseService.getInventoryPaginated(userId, PAGE_SIZE, null)
+        ]);
+        
+        setAnalyticsSummary(summary);
+        setInventory(products);
+        setLastProductVisible(lastDoc);
+        setHasMoreInventory(products.length === PAGE_SIZE);
+
     } catch (error) {
-      console.error("Failed to fetch data from Firebase", error);
+        console.error("Failed to fetch data from Firebase", error);
     } finally {
-      setLoading(false);
+        setLoading(false);
+        setInventoryLoading(false);
     }
   }, [userId]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (user) {
+        refetchData();
+    }
+  }, [user, refetchData]);
+
+  const fetchMoreInventory = useCallback(async () => {
+    if (!userId || !lastProductVisible || loadingMoreInventory) return;
+    setLoadingMoreInventory(true);
+    try {
+      const { products, lastDoc } = await firebaseService.getInventoryPaginated(userId, PAGE_SIZE, lastProductVisible);
+      setInventory(prev => [...prev, ...products]);
+      setLastProductVisible(lastDoc);
+      setHasMoreInventory(products.length === PAGE_SIZE);
+    } catch (error) {
+      console.error("Failed to fetch more inventory:", error);
+    } finally {
+      setLoadingMoreInventory(false);
+    }
+  }, [userId, lastProductVisible, loadingMoreInventory]);
 
   const addProduct = useCallback(async (productData: Omit<Product, 'id'>) => {
-    const newProduct = await firebaseService.addProduct(userId, productData);
-    setInventory(prev => [...prev, newProduct]);
-  }, [userId]);
+    await firebaseService.addProduct(userId, productData);
+    await refetchData();
+  }, [userId, refetchData]);
 
   const updateProduct = useCallback(async (updatedProduct: Product) => {
     await firebaseService.updateProduct(userId, updatedProduct);
-    setInventory(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
-  }, [userId]);
+    await refetchData();
+  }, [userId, refetchData]);
   
   const deleteProduct = useCallback(async (productId: string) => {
     await firebaseService.deleteProduct(userId, productId);
-    setInventory(prev => prev.filter(p => p.id !== productId));
-  }, [userId]);
+    await refetchData();
+  }, [userId, refetchData]);
 
   const addSale = useCallback(async (saleData: Omit<Sale, 'id' | 'date'>) => {
-    // FIX: The `addSale` function in firebaseService expects only 2 arguments.
-    const newSale = await firebaseService.addSale(userId, saleData);
-    setSales(prev => [newSale, ...prev]);
-
-    setInventory(prevInventory => {
-      const newInventory = [...prevInventory];
-      newSale.items.forEach(item => {
-        const productIndex = newInventory.findIndex(p => p.id === item.productId);
-        if (productIndex !== -1) {
-          newInventory[productIndex] = {
-            ...newInventory[productIndex],
-            stock: newInventory[productIndex].stock - item.quantity,
-          };
-        }
-      });
-      return newInventory;
-    });
-    // FIX: Removed `inventory` from dependency array as it is not needed when using a functional update with `setInventory`.
-  }, [userId]);
+    await firebaseService.addSale(userId, saleData);
+    // Fetch analytics to get latest stats, but only refetch inventory if stock might be affected.
+    // For now, a full refetch is simplest.
+    await refetchData();
+  }, [userId, refetchData]);
 
   const clearSales = useCallback(async () => {
       await firebaseService.clearSales(userId);
-      setSales([]);
+      // Only analytics is affected, so just refetch that.
+      const summary = await firebaseService.getAnalyticsSummary(userId);
+      setAnalyticsSummary(summary);
   }, [userId]);
 
   const value = {
     inventory,
-    sales,
+    analyticsSummary,
     loading,
+    inventoryLoading,
+    loadingMoreInventory,
+    hasMoreInventory,
+    fetchMoreInventory,
     addProduct,
     updateProduct,
     deleteProduct,
     addSale,
     clearSales,
-    refetchData: fetchData,
+    refetchData,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

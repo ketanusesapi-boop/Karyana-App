@@ -10,7 +10,14 @@ interface InventoryListProps {
 }
 
 const InventoryList: React.FC<InventoryListProps> = ({ onEditProduct, onAddNewProduct }) => {
-  const { inventory, deleteProduct, loading } = useData();
+  const { 
+    inventory, 
+    deleteProduct, 
+    inventoryLoading,
+    loadingMoreInventory,
+    fetchMoreInventory,
+    hasMoreInventory
+  } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isImportModalOpen, setImportModalOpen] = useState(false);
@@ -32,7 +39,7 @@ const InventoryList: React.FC<InventoryListProps> = ({ onEditProduct, onAddNewPr
     }
   };
 
-  if (loading) {
+  if (inventoryLoading) {
     return <div className="text-center p-10">Loading inventory...</div>;
   }
 
@@ -43,7 +50,7 @@ const InventoryList: React.FC<InventoryListProps> = ({ onEditProduct, onAddNewPr
         <div className="flex items-center space-x-2 w-full sm:w-auto">
           <input
             type="text"
-            placeholder="Search products..."
+            placeholder="Search loaded products..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full sm:w-64 px-3 py-2 border border-border-light dark:border-border-dark rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-transparent"
@@ -59,7 +66,7 @@ const InventoryList: React.FC<InventoryListProps> = ({ onEditProduct, onAddNewPr
           <thead className="bg-slate-50 dark:bg-slate-800">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-subtle-light dark:text-subtle-dark uppercase tracking-wider">Product Name</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-subtle-light dark:text-subtle-dark uppercase tracking-wider">Category</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-subtle-light dark:text-subtle-dark uppercase tracking-wider">Type</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-subtle-light dark:text-subtle-dark uppercase tracking-wider">Stock</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-subtle-light dark:text-subtle-dark uppercase tracking-wider">Purchase Price</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-subtle-light dark:text-subtle-dark uppercase tracking-wider">Selling Price</th>
@@ -69,15 +76,29 @@ const InventoryList: React.FC<InventoryListProps> = ({ onEditProduct, onAddNewPr
           <tbody className="divide-y divide-border-light dark:divide-border-dark">
             {filteredInventory.length > 0 ? filteredInventory.map(product => (
               <tr key={product.id} className="bg-card-light dark:bg-card-dark hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                <td data-label="Product Name" className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-primary dark:text-text-dark">{product.name}</div>
+                <td data-label="Product Name" className="px-6 py-4 whitespace-nowrap font-medium text-primary dark:text-text-dark">
+                    {product.name}
                 </td>
-                <td data-label="Category" className="px-6 py-4 whitespace-nowrap text-sm text-primary dark:text-subtle-dark">{product.category || '-'}</td>
-                <td data-label="Stock" className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${product.stock <= product.lowStockThreshold ? 'text-red-500' : 'text-primary dark:text-subtle-dark'}`}>
-                    {product.stock}
-                    <span className="text-xs text-primary dark:text-subtle-dark"> / {product.lowStockThreshold}</span>
+                <td data-label="Type" className="px-6 py-4 whitespace-nowrap text-sm">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        product.type === 'item' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' : 'bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200'
+                    }`}>
+                        {product.type === 'item' ? 'Item' : 'Service'}
+                    </span>
                 </td>
-                <td data-label="Purchase Price" className="px-6 py-4 whitespace-nowrap text-sm text-primary dark:text-subtle-dark">₹{product.purchasePrice.toFixed(2)}</td>
+                <td data-label="Stock" className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${product.type === 'item' && product.stock <= product.lowStockThreshold ? 'text-red-500' : 'text-primary dark:text-subtle-dark'}`}>
+                    {product.type === 'item' ? (
+                        <>
+                            {product.stock}
+                            <span className="text-xs text-primary dark:text-subtle-dark"> / {product.lowStockThreshold}</span>
+                        </>
+                    ) : (
+                        <span className="text-subtle-light dark:text-subtle-dark">—</span>
+                    )}
+                </td>
+                <td data-label="Purchase Price" className="px-6 py-4 whitespace-nowrap text-sm text-primary dark:text-subtle-dark">
+                    {product.type === 'item' ? `₹${product.purchasePrice.toFixed(2)}` : <span className="text-subtle-light dark:text-subtle-dark">—</span>}
+                </td>
                 <td data-label="Selling Price" className="px-6 py-4 whitespace-nowrap text-sm text-primary dark:text-subtle-dark">₹{product.sellingPrice.toFixed(2)}</td>
                 <td data-label="Actions" className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4 text-primary dark:text-subtle-dark">
                   <button onClick={() => onEditProduct(product)} className="text-primary hover:text-primary-hover font-semibold">Edit</button>
@@ -94,6 +115,18 @@ const InventoryList: React.FC<InventoryListProps> = ({ onEditProduct, onAddNewPr
           </tbody>
         </table>
       </div>
+      
+      {hasMoreInventory && (
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={fetchMoreInventory}
+            disabled={loadingMoreInventory}
+            className="px-6 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:bg-slate-400 disabled:cursor-not-allowed"
+          >
+            {loadingMoreInventory ? 'Loading...' : 'Load More'}
+          </button>
+        </div>
+      )}
 
       {productToDelete && (
         <Modal isOpen={!!productToDelete} onClose={() => setProductToDelete(null)} title="Confirm Deletion">

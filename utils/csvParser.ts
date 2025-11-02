@@ -44,6 +44,8 @@ export const parseCSV = (csvText: string): Promise<ParsedProduct[]> => {
                     sellingPrice,
                     category,
                     lowStockThreshold,
+                    // FIX: Add missing 'type' property, assuming imported products are items.
+                    type: 'item',
                 });
             }
             resolve(products);

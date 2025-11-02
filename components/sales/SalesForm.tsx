@@ -4,8 +4,8 @@ import { Sale, SaleItem, PaymentMode, Product } from '../../types';
 import Modal from '../ui/Modal';
 
 interface CartItem extends SaleItem {
-    name: string;
     stock: number;
+    type: 'item' | 'service';
 }
 
 interface SalesFormProps {
@@ -26,7 +26,7 @@ const SalesForm: React.FC<SalesFormProps> = ({ onClose }) => {
         const lowercasedTerm = searchTerm.toLowerCase();
         return inventory.filter(p =>
             p.name.toLowerCase().includes(lowercasedTerm) &&
-            p.stock > 0 &&
+            (p.type === 'service' || p.stock > 0) &&
             !cart.some(item => item.productId === p.id)
         );
     }, [inventory, cart, searchTerm]);
@@ -34,18 +34,19 @@ const SalesForm: React.FC<SalesFormProps> = ({ onClose }) => {
     const addProductToSale = useCallback((product: Product) => {
         setError('');
         
-        if (product.stock < 1) {
+        if (product.type === 'item' && product.stock < 1) {
             setError(`${product.name} is out of stock.`);
             return;
         }
 
         const newItem: CartItem = {
             productId: product.id,
+            productName: product.name,
             quantity: 1,
             pricePerItem: product.sellingPrice,
             purchasePricePerItem: product.purchasePrice,
-            name: product.name,
             stock: product.stock,
+            type: product.type,
         };
 
         setCart(prev => [...prev, newItem]);
@@ -65,8 +66,8 @@ const SalesForm: React.FC<SalesFormProps> = ({ onClose }) => {
                     if (isNaN(newQuantity) || newQuantity < 1) {
                         return item; // Ignore invalid characters or values less than 1
                     }
-                    if (newQuantity > item.stock) {
-                        setError(`Not enough stock for ${item.name}. Only ${item.stock} available.`);
+                    if (item.type === 'item' && newQuantity > item.stock) {
+                        setError(`Not enough stock for ${item.productName}. Only ${item.stock} available.`);
                         return { ...item, quantity: item.stock };
                     }
                     return { ...item, quantity: newQuantity };
@@ -99,7 +100,7 @@ const SalesForm: React.FC<SalesFormProps> = ({ onClose }) => {
 
         try {
             const saleData: Omit<Sale, 'id' | 'date'> = {
-                items: cart.map(({ name, stock, ...item }) => item),
+                items: cart.map(({ stock, type, ...item }) => item),
                 totalAmount,
                 paymentMode,
             };
@@ -136,7 +137,9 @@ const SalesForm: React.FC<SalesFormProps> = ({ onClose }) => {
                                 >
                                     <div>
                                         <span className="font-medium">{product.name}</span>
-                                        <span className="text-sm text-subtle-light dark:text-subtle-dark ml-2">(Stock: {product.stock})</span>
+                                        {product.type === 'item' && 
+                                            <span className="text-sm text-subtle-light dark:text-subtle-dark ml-2">(Stock: {product.stock})</span>
+                                        }
                                     </div>
                                     <span className="text-sm font-semibold">₹{product.sellingPrice.toFixed(2)}</span>
                                 </div>
@@ -154,7 +157,7 @@ const SalesForm: React.FC<SalesFormProps> = ({ onClose }) => {
                             {cart.map(item => (
                                 <div key={item.productId} className="flex flex-col sm:flex-row justify-between sm:items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-md gap-2">
                                     <div className="flex-grow">
-                                        <p className="font-semibold">{item.name}</p>
+                                        <p className="font-semibold">{item.productName}</p>
                                         <p className="text-sm text-subtle-light dark:text-subtle-dark">@ ₹{item.pricePerItem.toFixed(2)} each</p>
                                     </div>
                                     <div className="flex items-center space-x-2">
@@ -165,12 +168,12 @@ const SalesForm: React.FC<SalesFormProps> = ({ onClose }) => {
                                             value={item.quantity === 0 ? '' : item.quantity}
                                             onChange={(e) => updateQuantity(item.productId, e.target.value)}
                                             min="1"
-                                            max={item.stock}
+                                            max={item.type === 'item' ? item.stock : undefined}
                                             className="w-16 px-2 py-1 border border-border-light dark:border-border-dark rounded-md bg-transparent text-center"
-                                            aria-label={`Quantity for ${item.name}`}
+                                            aria-label={`Quantity for ${item.productName}`}
                                         />
                                         <p className="font-semibold w-24 text-right">₹{(item.quantity * item.pricePerItem).toFixed(2)}</p>
-                                        <button type="button" onClick={() => handleRemoveItem(item.productId)} className="text-red-500 hover:text-red-700 text-2xl font-bold leading-none p-1" aria-label={`Remove ${item.name}`}>&times;</button>
+                                        <button type="button" onClick={() => handleRemoveItem(item.productId)} className="text-red-500 hover:text-red-700 text-2xl font-bold leading-none p-1" aria-label={`Remove ${item.productName}`}>&times;</button>
                                     </div>
                                 </div>
                             ))}
